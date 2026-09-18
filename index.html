@@ -1,201 +1,197 @@
+<!DOCTYPE html>
+
+<html lang="th">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>DM-LDL Care | ปรับพฤติกรรมเบาหวาน & ไขมันในเลือด</title>
+
+<style>
+
+:root{--bg:#f4f7fb; --card:#ffffff; --pri:#0e7490; --pri-d:#155e75; --pri-l:#e0f2fe; --ok:#059669; --ok-l:#d1fae5; --warn:#d97706; --warn-l:#fef3c7; --bad:#dc2626; --bad-l:#fee2e2; --txt:#1e293b; --mut:#64748b; --bd:#e2e8f0;}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{font-family:sans-serif;background:var(--bg);color:var(--txt)}
+
+header{background:var(--pri);color:#fff;padding:20px 16px;text-align:center}
+
+nav{display:flex;gap:6px;overflow-x:auto;background:#fff;padding:8px 10px;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:50}
+
+nav button{border:none;background:#f1f5f9;color:var(--mut);padding:9px 16px;border-radius:20px;cursor:pointer;white-space:nowrap}
+
+nav button.active{background:var(--pri);color:#fff;font-weight:600}
+
+main{max-width:860px;margin:0 auto;padding:16px}
+
+.view{display:none}.view.on{display:block}
+
+.card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+
+input,select,textarea{width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:9px}
+
+button.btn{background:var(--pri);color:#fff;border:none;padding:12px;border-radius:9px;width:100%;cursor:pointer;margin-top:10px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;display:none}
+
+.toast.show{display:block}
+
+</style>
+
+</head>
+
+<body>
+
+
+<header><h1>🩺 DM-LDL Care</h1></header>
+
+<nav>
+
+  <button class="active" data-v="home">🏠 ภาพรวม</button>
+
+  <button data-v="daily">📝 บันทึกรายวัน</button>
+
+  <button data-v="week">📊 สรุป</button>
+
+  <button data-v="set">⚙️ ตั้งค่า</button>
+
+</nav>
+
+
+<main>
+
+  <section id="home" class="view on">
+
+    <div class="card">
+
+        รหัสผู้ป่วย: <input id="pidInput" style="width:100px;display:inline-block"> 
+
+        <button class="btn" style="width:auto" onclick="setPid()">เชื่อมต่อ</button>
+
+        <div id="syncState"></div>
+
+    </div>
+
+    <div class="card"><h2>ความคืบหน้า</h2><button class="btn" onclick="go('daily')">บันทึกวันนี้</button></div>
+
+  </section>
+
+
+  <section id="daily" class="view">
+
+    <div class="card">
+
+        <h2>บันทึกรายวัน</h2>
+
+        <input type="date" id="d_date">
+
+        <label>ก้าวเดิน</label><input type="number" id="d_step" value="0">
+
+        <button class="btn" onclick="saveDay()">บันทึกข้อมูล</button>
+
+    </div>
+
+  </section>
+
+
+  <section id="week" class="view"><div class="card"><h2>สรุปรายสัปดาห์</h2></div></section>
+
+  <section id="set" class="view"><div class="card"><h2>ตั้งค่า</h2></div></section>
+
+</main>
+
+
+<div class="toast" id="toast"></div>
+
+
 <script>
 
-/* ---------- ฐานข้อมูล ---------- */
+/* 1. ตั้งค่าพื้นฐาน */
 
 const KEY = 'dmldl_v1';
 
-let db = JSON.parse(localStorage.getItem(KEY) || 'null') || {
-
-  profile: { name: '', age: '', sex: 'ชาย', ht: '' },
-
-  goals: { step: 8000, veg: 5, ex: 150, grain: 7, fish: 3, fried: 2, sweet: 2, stress: 5 },
-
-  logs: {}, 
-
-  labs: []
-
-};
-
-const save = () => localStorage.setItem(KEY, JSON.stringify(db));
+let db = JSON.parse(localStorage.getItem(KEY)) || { logs: {} };
 
 const $ = id => document.getElementById(id);
 
-const iso = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
-
-const today = iso(new Date());
-
-const thDate = s => { const d = new Date(s); return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }); };
+const save = () => localStorage.setItem(KEY, JSON.stringify(db));
 
 
-function toast(m) {
-
-  const t = $('toast');
-
-  t.textContent = m;
-
-  t.classList.add('show');
-
-  setTimeout(() => t.classList.remove('show'), 2200);
-
-}
-
-
-/* ---------- Google Sheets Integration ---------- */
+/* 2. Google Sheets API */
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbwF-Gllj1oZ8e9ivIKVpwC9lH0C2OuT_JhjpDXM5zUtxIdIoerlm32Edv1NzweiJubnsw/exec';
 
 let PID = localStorage.getItem('dmldl_pid') || '';
 
 
-function setPid() {
+function setPid(){
 
-  const v = $('pidInput').value.trim();
+    PID = $('pidInput').value;
 
-  if (!v) { toast('กรุณากรอกรหัสผู้ป่วย'); return; }
+    localStorage.setItem('dmldl_pid', PID);
 
-  PID = v;
-
-  localStorage.setItem('dmldl_pid', v);
-
-  $('syncState').textContent = '✅ เชื่อมต่อแล้ว: ' + v;
-
-  toast('ตั้งค่ารหัสผู้ป่วยแล้ว');
+    $('syncState').textContent = 'เชื่อมต่อแล้ว: ' + PID;
 
 }
 
 
-function send(payload) {
+function send(payload){
 
-  if (!PID) return;
+    if(!PID) return;
 
-  payload.pid = PID;
+    payload.pid = PID;
 
-  fetch(API_URL, {
+    fetch(API_URL, {
 
-    method: 'POST',
+        method: 'POST',
 
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
 
-    body: JSON.stringify(payload)
+        body: JSON.stringify(payload)
 
-  })
-
-  .then(r => r.json())
-
-  .then(r => $('syncState').textContent = r.ok ? '✅ บันทึกออนไลน์แล้ว' : '❌ บันทึกไม่สำเร็จ')
-
-  .catch(() => $('syncState').textContent = '📴 ออฟไลน์');
+    }).then(r => r.json()).then(r => $('syncState').textContent = r.ok ? '✅ ส่งแล้ว' : '❌ ผิดพลาด');
 
 }
 
 
-/* ---------- การนำทาง ---------- */
+/* 3. การนำทาง */
 
-function go(v) {
+function go(v){
 
-  document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === v));
+    document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === v));
 
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  if (v === 'home') renderHome();
-
-  if (v === 'week') renderWeek();
-
-  if (v === 'lab') renderLab();
-
-  if (v === 'daily') loadDay();
+    document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
 
 }
 
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.v));
 
 
-/* ---------- บันทึกรายวัน ---------- */
+/* 4. บันทึกข้อมูล */
 
-$('d_date').value = today;
+function saveDay(){
 
-$('d_date').onchange = loadDay;
+    const k = $('d_date').value;
 
+    db.logs[k] = { step: +$('d_step').value };
 
-function loadDay() {
+    save();
 
-  const d = db.logs[$('d_date').value] || {};
+    alert('บันทึกในเครื่องแล้ว');
 
-  $('d_veg').value = d.veg || 0; $('d_grain').value = d.grain || 0; 
-
-  $('d_fish').value = d.fish || 0; $('d_fried').value = d.fried || 0; 
-
-  $('d_sweet').value = d.sweet || 0; $('d_chol').value = d.chol || 0;
-
-  $('d_step').value = d.step || 0; $('d_ex').value = d.ex || 0; 
-
-  $('d_med').value = d.med || '1';
-
-  $('d_stress').value = d.stress || 3; $('stressVal').textContent = d.stress || 3;
-
-  $('d_wt').value = d.wt || ''; $('d_bs').value = d.bs || ''; 
-
-  $('d_wc').value = d.wc || ''; $('d_note').value = d.note || '';
+    send({type: 'daily', date: k, step: db.logs[k].step});
 
 }
 
 
-function saveDay() {
-
-  const k = $('d_date').value;
-
-  if (!k) { toast('กรุณาเลือกวันที่'); return; }
-
-  const n = id => +$(id).value || 0;
-
-  db.logs[k] = {
-
-    veg: n('d_veg'), grain: n('d_grain'), fish: n('d_fish'), fried: n('d_fried'), 
-
-    sweet: n('d_sweet'), chol: n('d_chol'), step: n('d_step'), ex: n('d_ex'), 
-
-    med: +$('d_med').value, stress: n('d_stress'), wt: $('d_wt').value, 
-
-    bs: $('d_bs').value, wc: $('d_wc').value, note: $('d_note').value
-
-  };
-
-  save(); toast('✅ บันทึกเรียบร้อย');
-
-  send(Object.assign({ type: 'daily', date: k }, db.logs[k]));
-
-  renderHome();
-
-}
-
-
-/* ---------- ส่วนอื่นๆ (เรียกใช้ฟังก์ชันเดิมของคุณ) ---------- */
-
-function renderHome() { /* โค้ดเดิมของคุณ */ }
-
-function renderWeek() { /* โค้ดเดิมของคุณ */ }
-
-function renderLab() { /* โค้ดเดิมของคุณ */ }
-
-function saveLab() { /* โค้ดเดิมของคุณ */ }
-
-function loadSet() { /* โค้ดเดิมของคุณ */ }
-
-function saveSet() { /* โค้ดเดิมของคุณ */ }
-
-function exportJSON() { /* โค้ดเดิมของคุณ */ }
-
-function exportCSV() { /* โค้ดเดิมของคุณ */ }
-
-function clearAll() { /* โค้ดเดิมของคุณ */ }
-
-
-/* ---------- เริ่มต้น ---------- */
-
-loadSet(); loadDay(); renderHome(); renderWeek(); renderLab();
-
-if (PID) { $('pidInput').value = PID; $('syncState').textContent = '✅ เชื่อมต่อแล้ว: ' + PID; }
+if(PID) $('pidInput').value = PID;
 
 </script>
+
+</body>
+
+</html>
