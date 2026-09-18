@@ -1,197 +1,569 @@
 <!DOCTYPE html>
-
 <html lang="th">
-
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>DM-LDL Care | ปรับพฤติกรรมเบาหวาน & ไขมันในเลือด</title>
 
 <style>
-
-:root{--bg:#f4f7fb; --card:#ffffff; --pri:#0e7490; --pri-d:#155e75; --pri-l:#e0f2fe; --ok:#059669; --ok-l:#d1fae5; --warn:#d97706; --warn-l:#fef3c7; --bad:#dc2626; --bad-l:#fee2e2; --txt:#1e293b; --mut:#64748b; --bd:#e2e8f0;}
+:root{
+  --bg:#f4f7fb; --card:#ffffff; --pri:#0e7490; --pri-d:#155e75; --pri-l:#e0f2fe;
+  --ok:#059669; --ok-l:#d1fae5; --warn:#d97706; --warn-l:#fef3c7;
+  --bad:#dc2626; --bad-l:#fee2e2; --txt:#1e293b; --mut:#64748b; --bd:#e2e8f0;
+}
 
 *{box-sizing:border-box;margin:0;padding:0}
-
-body{font-family:sans-serif;background:var(--bg);color:var(--txt)}
-
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt)}
 header{background:var(--pri);color:#fff;padding:20px 16px;text-align:center}
+header h1{font-size:1.5rem;margin-bottom:4px}
+header p{font-size:.85rem;opacity:.9}
 
 nav{display:flex;gap:6px;overflow-x:auto;background:#fff;padding:8px 10px;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:50}
-
-nav button{border:none;background:#f1f5f9;color:var(--mut);padding:9px 16px;border-radius:20px;cursor:pointer;white-space:nowrap}
-
+nav button{flex:0 0 auto;border:none;background:#f1f5f9;color:var(--mut);padding:9px 16px;border-radius:20px;font-size:.9rem;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.2s}
 nav button.active{background:var(--pri);color:#fff;font-weight:600}
-
 main{max-width:860px;margin:0 auto;padding:16px}
-
-.view{display:none}.view.on{display:block}
-
+.view{display:none;animation:fade .25s}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
 .card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
-
-input,select,textarea{width:100%;padding:10px;border:1.5px solid var(--bd);border-radius:9px}
-
-button.btn{background:var(--pri);color:#fff;border:none;padding:12px;border-radius:9px;width:100%;cursor:pointer;margin-top:10px}
-
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;display:none}
-
-.toast.show{display:block}
-
+.card h2{font-size:1.05rem;color:var(--pri-d);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h3{font-size:.95rem;margin:14px 0 6px;color:var(--pri-d)}
+label{display:block;font-size:.88rem;font-weight:600;margin:10px 0 4px}
+.hint{font-size:.78rem;color:var(--mut);font-weight:400}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:9px;font-family:inherit;font-size:.95rem;background:#fff}
+input:focus,select:focus{outline:none;border-color:var(--pri)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:560px){.grid3{grid-template-columns:1fr 1fr}}
+button.btn{background:var(--pri);color:#fff;border:none;padding:12px 20px;border-radius:9px;font-size:.95rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%;margin-top:14px}
+button.btn:hover{background:var(--pri-d)}
+button.ghost{background:#fff;color:var(--pri);border:1.5px solid var(--pri)}
+button.sm{width:auto;padding:8px 14px;font-size:.85rem;margin-top:0}
+.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center}
+@media(max-width:560px){.stat{grid-template-columns:1fr 1fr}}
+.stat div{background:var(--pri-l);border-radius:11px;padding:12px 6px}
+.stat b{display:block;font-size:1.4rem;color:var(--pri-d)}
+.stat span{font-size:.75rem;color:var(--mut)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px dashed var(--bd);gap:10px}
+.row:last-child{border:none}
+.badge{font-size:.75rem;padding:4px 11px;border-radius:12px;font-weight:700;white-space:nowrap}
+.b-ok{background:var(--ok-l);color:var(--ok)}.b-warn{background:var(--warn-l);color:var(--warn)}.b-bad{background:var(--bad-l);color:var(--bad)}
+.bar{height:9px;background:#e2e8f0;border-radius:6px;overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--pri);border-radius:6px;transition:.5s}
+.chart{display:flex;align-items:flex-end;gap:6px;height:130px;margin:14px 0 4px}
+.chart div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.chart .col{width:100%;background:var(--pri);border-radius:5px 5px 0 0;min-height:3px;position:relative}
+.chart .col.low{background:#fca5a5}
+.chart small{font-size:.68rem;color:var(--mut);margin-top:4px}
+.score{text-align:center;padding:16px}
+.score b{font-size:3rem;color:var(--pri);display:block;line-height:1}
+.acc{border:1px solid var(--bd);border-radius:11px;margin-bottom:10px;overflow:hidden}
+.acc>button{width:100%;text-align:right;background:#fff;border:none;padding:15px;font-size:.98rem;font-weight:600;font-family:inherit;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--txt)}
+.acc>button:hover{background:#f8fafc}
+.acc .ic{font-size:1.3rem}
+.acc .body{display:none;padding:0 16px 16px;font-size:.92rem;border-top:1px solid var(--bd);padding-top:12px}
+.acc.open .body{display:block}
+.acc ul{margin:6px 18px 10px 0;padding-right:4px}
+.acc li{margin-bottom:5px}
+.tag{display:inline-block;background:var(--pri-l);color:var(--pri-d);font-size:.78rem;padding:3px 10px;border-radius:8px;margin:2px 2px 2px 0}
+table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:8px}
+th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--bd)}
+th{background:#f8fafc;color:var(--mut);font-size:.78rem}
+.note{background:var(--warn-l);border-right:4px solid var(--warn);padding:11px 13px;border-radius:8px;font-size:.85rem;margin-top:10px}
+.ok-note{background:var(--ok-l);border-right-color:var(--ok)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--ok);color:#fff;padding:13px 26px;border-radius:26px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);transition:.35s;z-index:99}
+.toast.show{transform:translateX(-50%) translateY(0)}
+footer{text-align:center;font-size:.78rem;color:var(--mut);padding:20px}
 </style>
-
 </head>
 
 <body>
 
+<header>
+  <h1>🩺 DM-LDL Care</h1>
+  <p>โปรแกรมปรับเปลี่ยนพฤติกรรม สำหรับผู้ป่วยเบาหวานที่มีไขมัน LDL สูง</p>
+</header>
 
-<header><h1>🩺 DM-LDL Care</h1></header>
+<div id="loginBar" style="background:#fff;padding:14px 16px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center">
+  <span style="font-size:.88rem;font-weight:600">🔑 รหัสผู้ป่วย:</span>
+  <input id="pidInput" placeholder="เช่น DM001" style="width:150px;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit">
+  <button class="btn sm" style="margin:0;width:auto" onclick="setPid()">เข้าใช้งาน</button>
+  <span id="syncState" style="font-size:.8rem;color:#64748b"></span>
+</div>
 
 <nav>
-
   <button class="active" data-v="home">🏠 ภาพรวม</button>
-
   <button data-v="daily">📝 บันทึกรายวัน</button>
-
-  <button data-v="week">📊 สรุป</button>
-
+  <button data-v="week">📊 สรุปรายสัปดาห์</button>
+  <button data-v="edu">📚 คลังความรู้</button>
+  <button data-v="lab">🧪 ผลเลือด</button>
   <button data-v="set">⚙️ ตั้งค่า</button>
-
 </nav>
-
 
 <main>
 
-  <section id="home" class="view on">
+<!-- ========== ภาพรวม ========== -->
+<section id="home" class="view on">
+  <div class="card">
+    <h2>👋 <span id="greet">สวัสดี</span></h2>
+    <div class="stat">
+      <div><b id="s1">0</b><span>ก้าววันนี้</span></div>
+      <div><b id="s2">0</b><span>ผัก-ผลไม้ (ส่วน)</span></div>
+      <div><b id="s3">0</b><span>ออกกำลังกาย (นาที)</span></div>
+      <div><b id="s4">0</b><span>วันที่บันทึกต่อเนื่อง</span></div>
+    </div>
+  </div>
 
-    <div class="card">
+  <div class="card">
+    <h2>🎯 ความคืบหน้าวันนี้</h2>
+    <div id="todayProg"></div>
+    <button class="btn" onclick="go('daily')">✍️ บันทึกพฤติกรรมวันนี้</button>
+  </div>
 
-        รหัสผู้ป่วย: <input id="pidInput" style="width:100px;display:inline-block"> 
+  <div class="card">
+    <h2>📈 ก้าวเดิน 7 วันล่าสุด</h2>
+    <div class="chart" id="chart7"></div>
+    <p class="hint" style="text-align:center">แท่งสีแดง = ยังไม่ถึงเป้าหมาย</p>
+  </div>
 
-        <button class="btn" style="width:auto" onclick="setPid()">เชื่อมต่อ</button>
+  <div class="card">
+    <h2>💡 เคล็ดลับประจำวัน</h2>
+    <p id="tip" style="font-size:.95rem"></p>
+  </div>
+</section>
 
-        <div id="syncState"></div>
+<!-- ========== บันทึกรายวัน ========== -->
+<section id="daily" class="view">
+  <div class="card">
+    <h2>📝 บันทึกพฤติกรรมประจำวัน</h2>
+    <label>วันที่</label>
+    <input type="date" id="d_date">
 
+    <h3>🍽️ ด้านอาหาร (จำนวนครั้ง/ส่วนที่รับประทานวันนี้)</h3>
+    <div class="grid2">
+      <div><label>ผัก-ผลไม้ <span class="hint">(ส่วน)</span><input type="number" id="d_veg" min="0" max="20" value="0"></label></div>
+      <div><label>ธัญพืชไม่ขัดสี <span class="hint">(ครั้ง)</span><input type="number" id="d_grain" min="0" max="10" value="0"></label></div>
+      <div><label>ปลา/ถั่ว <span class="hint">(ครั้ง)</span><input type="number" id="d_fish" min="0" max="10" value="0"></label></div>
+      <div><label>ของทอด/มันสัตว์ <span class="hint">(ครั้ง)</span><input type="number" id="d_fried" min="0" max="10" value="0"></label></div>
+      <div><label>ขนม/เครื่องดื่มหวาน <span class="hint">(ครั้ง)</span><input type="number" id="d_sweet" min="0" max="10" value="0"></label></div>
+      <div><label>เครื่องใน/ไข่แดง/กะทิ <span class="hint">(ครั้ง)</span><input type="number" id="d_chol" min="0" max="10" value="0"></label></div>
     </div>
 
-    <div class="card"><h2>ความคืบหน้า</h2><button class="btn" onclick="go('daily')">บันทึกวันนี้</button></div>
-
-  </section>
-
-
-  <section id="daily" class="view">
-
-    <div class="card">
-
-        <h2>บันทึกรายวัน</h2>
-
-        <input type="date" id="d_date">
-
-        <label>ก้าวเดิน</label><input type="number" id="d_step" value="0">
-
-        <button class="btn" onclick="saveDay()">บันทึกข้อมูล</button>
-
+    <h3>🏃 การเคลื่อนไหวร่างกาย</h3>
+    <div class="grid2">
+      <div><label>จำนวนก้าวเดิน<input type="number" id="d_step" min="0" max="60000" value="0"></label></div>
+      <div><label>ออกกำลังกาย (นาที)<input type="number" id="d_ex" min="0" max="300" value="0"></label></div>
     </div>
 
-  </section>
+    <h3>💊 การใช้ยา</h3>
+    <label>รับประทานยาครบตามแพทย์สั่งหรือไม่
+      <select id="d_med">
+        <option value="1">✅ ครบทุกมื้อ</option>
+        <option value="0.5">⚠️ ลืมบางมื้อ</option>
+        <option value="0">❌ ไม่ได้รับประทาน</option>
+      </select>
+    </label>
 
+    <h3>🧘 อารมณ์และความเครียด</h3>
+    <label>ระดับความเครียดวันนี้ (0 = สบายมาก, 10 = เครียดมาก) — <b id="stressVal">3</b>
+      <input type="range" id="d_stress" min="0" max="10" value="3" oninput="stressVal.textContent=this.value">
+    </label>
 
-  <section id="week" class="view"><div class="card"><h2>สรุปรายสัปดาห์</h2></div></section>
+    <h3>📋 ค่าติดตามเพิ่มเติม (ถ้ามี)</h3>
+    <div class="grid3">
+      <div><label>น้ำหนัก (กก.)<input type="number" id="d_wt" step="0.1" min="0"></label></div>
+      <div><label>น้ำตาลปลายนิ้ว<input type="number" id="d_bs" min="0"></label></div>
+      <div><label>รอบเอว (ซม.)<input type="number" id="d_wc" step="0.5" min="0"></label></div>
+    </div>
 
-  <section id="set" class="view"><div class="card"><h2>ตั้งค่า</h2></div></section>
+    <label>บันทึกเพิ่มเติม / อุปสรรคที่พบ<textarea id="d_note" rows="2" placeholder="เช่น ไปงานเลี้ยง กินของทอดเยอะ"></textarea></label>
 
+    <button class="btn" onclick="saveDay()">💾 บันทึกข้อมูล</button>
+    <div id="dayFeedback"></div>
+  </div>
+</section>
+
+<!-- ========== สรุปรายสัปดาห์ ========== -->
+<section id="week" class="view">
+  <div class="card">
+    <h2>📊 สรุปผลรายสัปดาห์</h2>
+    <label>เลือกวันใดก็ได้ในสัปดาห์ที่ต้องการดู<input type="date" id="w_date" onchange="renderWeek()"></label>
+    <p class="hint" id="wRange" style="margin-top:8px"></p>
+  </div>
+
+  <div class="card">
+    <div class="score">
+      <b id="wScore">0%</b>
+      <span id="wScoreTxt" class="hint">คะแนนการทำตามเป้าหมาย</span>
+      <div class="bar" style="margin-top:12px"><i id="wBar" style="width:0%"></i></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>✅ ผลเทียบเป้าหมาย</h2>
+    <div id="wList"></div>
+  </div>
+
+  <div class="card">
+    <h2>📈 ก้าวเดินรายวันในสัปดาห์นี้</h2>
+    <div class="chart" id="wChart"></div>
+  </div>
+
+  <div class="card">
+    <h2>🗂️ ตารางบันทึกรายวัน</h2>
+    <div style="overflow-x:auto"><table id="wTable"></table></div>
+  </div>
+
+  <div class="card">
+    <h2>💬 ข้อเสนอแนะสำหรับสัปดาห์หน้า</h2>
+    <div id="wAdvice"></div>
+  </div>
+</section>
+
+<!-- ========== คลังความรู้ ========== -->
+<section id="edu" class="view">
+  <div class="card">
+    <h2>📚 คลังความรู้ (กดอ่านได้ตลอดเวลา)</h2>
+    <p class="hint">เลือกหัวข้อที่ต้องการเรียนรู้ — เนื้อหาอ้างอิงแนวทางเวชปฏิบัติสำหรับผู้ป่วยเบาหวานและภาวะไขมันในเลือดผิดปกติ</p>
+  </div>
+
+  <div class="card">
+    <div class="acc">
+      <button onclick="tog(this)"><span><span class="ic">🍽️</span> 1. การรับประทานอาหาร</span><span>▾</span></button>
+      <div class="body">
+        <h3>หลักการสำคัญ</h3>
+        <ul>
+          <li>ลด <b>ไขมันอิ่มตัว</b> ให้น้อยกว่า 7% ของพลังงานทั้งวัน และ <b>งดไขมันทรานส์</b></li>
+          <li>จำกัดคอเลสเตอรอลจากอาหาร &lt; 200 มก./วัน</li>
+          <li>เพิ่ม <b>ใยอาหารชนิดละลายน้ำ</b> 10–25 ก./วัน ช่วยลด LDL ได้ 5–10%</li>
+          <li>ใช้หลัก "จานสุขภาพ": ผัก 1/2 จาน + ข้าว/แป้งไม่ขัดสี 1/4 จาน + โปรตีนไม่ติดมัน 1/4 จาน</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ผลเลือด ========== -->
+<section id="lab" class="view">
+  <div class="card">
+    <h2>🧪 บันทึกผลตรวจเลือด</h2>
+    <label>วันที่ตรวจ<input type="date" id="l_date"></label>
+    <div class="grid3">
+      <div><label>LDL<input type="number" id="l_ldl"></label></div>
+      <div><label>HDL<input type="number" id="l_hdl"></label></div>
+      <div><label>Triglyceride<input type="number" id="l_tg"></label></div>
+      <div><label>Total chol.<input type="number" id="l_tc"></label></div>
+      <div><label>HbA1c (%)<input type="number" step="0.1" id="l_a1c"></label></div>
+      <div><label>FBS<input type="number" id="l_fbs"></label></div>
+    </div>
+    <button class="btn" onclick="saveLab()">💾 บันทึกผลเลือด</button>
+  </div>
+  <div class="card">
+    <h2>📋 ประวัติผลตรวจ</h2>
+    <div style="overflow-x:auto"><table id="labTable"></table></div>
+    <div id="labTrend"></div>
+  </div>
+</section>
+
+<!-- ========== ตั้งค่า ========== -->
+<section id="set" class="view">
+  <div class="card">
+    <h2>👤 ข้อมูลผู้ใช้</h2>
+    <div class="grid2">
+      <div><label>ชื่อ-สกุล<input type="text" id="p_name" placeholder="เช่น คุณสมชาย"></label></div>
+      <div><label>อายุ (ปี)<input type="number" id="p_age"></label></div>
+      <div><label>เพศ<select id="p_sex"><option>ชาย</option><option>หญิง</option></select></label></div>
+      <div><label>ส่วนสูง (ซม.)<input type="number" id="p_ht"></label></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🎯 ตั้งเป้าหมายรายสัปดาห์</h2>
+    <div class="grid2">
+      <div><label>ก้าวเดินต่อวัน<input type="number" id="g_step" value="8000"></label></div>
+      <div><label>ผัก-ผลไม้ (ส่วน/วัน)<input type="number" id="g_veg" value="5"></label></div>
+      <div><label>ออกกำลังกาย (นาที/สัปดาห์)<input type="number" id="g_ex" value="150"></label></div>
+      <div><label>ธัญพืชไม่ขัดสี (ครั้ง/สัปดาห์)<input type="number" id="g_grain" value="7"></label></div>
+      <div><label>ปลา/ถั่ว (ครั้ง/สัปดาห์)<input type="number" id="g_fish" value="3"></label></div>
+      <div><label>ของทอด ไม่เกิน (ครั้ง/สัปดาห์)<input type="number" id="g_fried" value="2"></label></div>
+      <div><label>ของหวาน ไม่เกิน (ครั้ง/สัปดาห์)<input type="number" id="g_sweet" value="2"></label></div>
+      <div><label>ความเครียดเฉลี่ย ไม่เกิน<input type="number" id="g_stress" value="5"></label></div>
+    </div>
+    <button class="btn" onclick="saveSet()">💾 บันทึกการตั้งค่า</button>
+  </div>
+
+  <div class="card">
+    <h2>💾 จัดการข้อมูล</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn sm ghost" onclick="exportJSON()">⬇️ ส่งออก JSON</button>
+      <button class="btn sm ghost" onclick="exportCSV()">📄 ส่งออก CSV</button>
+      <button class="btn sm ghost" style="color:var(--bad);border-color:var(--bad)" onclick="clearAll()">🗑️ ล้างข้อมูลทั้งหมด</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  ⚠️ เว็บไซต์นี้เป็นเครื่องมือส่งเสริมการปรับพฤติกรรมเพื่อการศึกษา<br>ไม่ใช้ทดแทนคำวินิจฉัยหรือคำแนะนำจากแพทย์ • ฉุกเฉินโทร 1669
+</footer>
 </main>
-
 
 <div class="toast" id="toast"></div>
 
-
 <script>
-
-/* 1. ตั้งค่าพื้นฐาน */
-
+/* ---------- ฐานข้อมูล ---------- */
 const KEY = 'dmldl_v1';
-
-let db = JSON.parse(localStorage.getItem(KEY)) || { logs: {} };
-
-const $ = id => document.getElementById(id);
+let db = JSON.parse(localStorage.getItem(KEY) || 'null') || {
+  profile: { name: '', age: '', sex: 'ชาย', ht: '' },
+  goals: { step: 8000, veg: 5, ex: 150, grain: 7, fish: 3, fried: 2, sweet: 2, stress: 5 },
+  logs: {}, 
+  labs: []
+};
 
 const save = () => localStorage.setItem(KEY, JSON.stringify(db));
+const $ = id => document.getElementById(id);
+const iso = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
+const today = iso(new Date());
+const thDate = s => { const d = new Date(s); return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }); };
 
-
-/* 2. Google Sheets API */
-
-const API_URL = 'https://script.google.com/macros/s/AKfycbwF-Gllj1oZ8e9ivIKVpwC9lH0C2OuT_JhjpDXM5zUtxIdIoerlm32Edv1NzweiJubnsw/exec';
-
-let PID = localStorage.getItem('dmldl_pid') || '';
-
-
-function setPid(){
-
-    PID = $('pidInput').value;
-
-    localStorage.setItem('dmldl_pid', PID);
-
-    $('syncState').textContent = 'เชื่อมต่อแล้ว: ' + PID;
-
+function toast(m) {
+  const t = $('toast');
+  t.textContent = m;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-
-function send(payload){
-
-    if(!PID) return;
-
-    payload.pid = PID;
-
-    fetch(API_URL, {
-
-        method: 'POST',
-
-        headers: {'Content-Type': 'text/plain;charset=utf-8'},
-
-        body: JSON.stringify(payload)
-
-    }).then(r => r.json()).then(r => $('syncState').textContent = r.ok ? '✅ ส่งแล้ว' : '❌ ผิดพลาด');
-
+function tog(b) {
+  b.parentElement.classList.toggle('open');
 }
 
-
-/* 3. การนำทาง */
-
-function go(v){
-
-    document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === v));
-
-    document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
-
-}
-
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.v));
-
-
-/* 4. บันทึกข้อมูล */
-
-function saveDay(){
-
-    const k = $('d_date').value;
-
-    db.logs[k] = { step: +$('d_step').value };
-
-    save();
-
-    alert('บันทึกในเครื่องแล้ว');
-
-    send({type: 'daily', date: k, step: db.logs[k].step});
-
-}
-
-
-if(PID) $('pidInput').value = PID;
-
-</script>
-
-</body>
-
-</html>
+/* ---------- Google Sheets Integration ---------- */
+const API_URL = 'https://script.google.com/macros/s/AKfycbxRXOV6d5AdCyOjV-m79gc1b0IMsLxpLF89k0sbyK1AYUnGa99BtdLhJKM5HsIdrBIO/exec'; 
+let PID = localStorage.getItem('dmldl_pid') || ''; 
+ 
+function setPid() { 
+  const v = $('pidInput').value.trim(); 
+  if (!v) { toast('กรุณากรอกรหัสผู้ป่วย'); return; } 
+  PID = v; 
+  localStorage.setItem('dmldl_pid', v); 
+  $('syncState').textContent = '✅ เชื่อมต่อแล้ว: ' + v; 
+  pullFromCloud(); 
+} 
+ 
+function send(payload) { 
+  if (!PID) { $('syncState').textContent = '⚠️ ยังไม่ได้กรอกรหัสผู้ป่วย'; return; } 
+  payload.pid = PID; 
+  $('syncState').textContent = '⏳ กำลังส่งข้อมูล...'; 
+  fetch(API_URL, { 
+    method: 'POST', 
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+    body: JSON.stringify(payload) 
+  }) 
+  .then(r => r.json()) 
+  .then(r => $('syncState').textContent = r.ok ? '✅ ส่งข้อมูลสำเร็จ' : '❌ ส่งไม่สำเร็จ') 
+  .catch(() => $('syncState').textContent = '📴 ออฟไลน์ — บันทึกในเครื่องไว้แล้ว'); 
+} 
+ 
+function pullFromCloud() { 
+  // ดึงข้อมูลกรณีรองรับการใช้แบบ Multi-device 
+} 
+ 
+/* ---------- การนำทางหน้าต่าง ---------- */ 
+function go(v) { 
+  document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === v)); 
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v)); 
+  window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  if (v === 'home') renderHome(); 
+  if (v === 'week') renderWeek(); 
+  if (v === 'lab') renderLab(); 
+  if (v === 'daily') loadDay(); 
+  if (v === 'set') loadSet(); 
+} 
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.v)); 
+ 
+/* ---------- บันทึกรายวัน ---------- */ 
+$('d_date').value = today; 
+$('d_date').onchange = loadDay; 
+ 
+function loadDay() { 
+  const d = db.logs[$('d_date').value] \vert{}\vert{} {};$('d_veg').value = d.veg ?? 0;  
+  $('d_grain').value = d.grain ?? 0;  
+  $('d_fish').value = d.fish ?? 0; 
+  $('d_fried').value = d.fried ?? 0;  
+  $('d_sweet').value = d.sweet ?? 0;  
+  $('d_chol').value = d.chol ?? 0; 
+  $('d_step').value = d.step ?? 0;  
+  $('d_ex').value = d.ex ?? 0;  
+  $('d_med').value = d.med ?? '1'; 
+  $('d_stress').value = d.stress ?? 3;  
+  $('stressVal').textContent = d.stress ?? 3; 
+  $('d_wt').value = d.wt ?? '';  
+  $('d_bs').value = d.bs ?? '';  
+  $('d_wc').value = d.wc ?? '';  
+  $('d_note').value = d.note ?? ''; 
+  $('dayFeedback').innerHTML = ''; 
+} 
+ 
+function saveDay() { 
+  const k = $('d_date').value; 
+  if (!k) { toast('กรุณาเลือกวันที่'); return; } 
+  const n = id => +$(id).value || 0; 
+  db.logs[k] = { 
+    veg: n('d_veg'), grain: n('d_grain'), fish: n('d_fish'), fried: n('d_fried'), sweet: n('d_sweet'), 
+    chol: n('d_chol'), step: n('d_step'), ex: n('d_ex'), med: +$('d_med').value, stress: n('d_stress'), 
+    wt: $('d_wt').value, bs:$('d_bs').value, wc: $('d_wc').value, note:$('d_note').value 
+  }; 
+  save();  
+  toast('✅ บันทึกเรียบร้อยแล้ว'); 
+  send(Object.assign({ type: 'daily', date: k }, db.logs[k])); 
+  renderHome(); 
+} 
+ 
+/* ---------- หน้าต่างภาพรวม (Home) ---------- */ 
+function renderHome() { 
+  const g = db.goals, t = db.logs[today] || {}; 
+  $('greet').textContent = 'สวัสดี ' + (db.profile.name || 'คุณผู้ใช้') + ' 🌤️'; 
+  $('s1').textContent = (t.step \vert{}\vert{} 0).toLocaleString();$('s2').textContent = t.veg || 0; 
+  $('s3').textContent = t.ex || 0; 
+   
+  let streak = 0, d = new Date(); 
+  while (db.logs[iso(d)]) { streak++; d.setDate(d.getDate() - 1); } 
+  $('s4').textContent = streak; 
+ 
+  const items = [ 
+    ['👟 ก้าวเดิน', t.step || 0, g.step, 'ก้าว'], 
+    ['🥗 ผัก-ผลไม้', t.veg || 0, g.veg, 'ส่วน'], 
+    ['🏃 ออกกำลังกาย', t.ex || 0, Math.round(g.ex / 7), 'นาที'], 
+    ['💊 การกินยา', (t.med ?? 0) * 100, 100, '%'] 
+  ]; 
+  $('todayProg').innerHTML = items.map(([n, v, go_, u]) => { 
+    const p = Math.min(100, Math.round(v / (go_ || 1) * 100)); 
+    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:.88rem"> 
+      <span>${n}</span><b>${Math.round(v).toLocaleString()} / ${go_.toLocaleString()} ${u}</b></div> 
+      <div class="bar"><i style="width:${p}%;background:${p >= 100 ? 'var(--ok)' : 'var(--pri)'}"></i></div></div>`; 
+  }).join(''); 
+ 
+  const days = [...Array(7)].map((_, i) => { const x = new Date(); x.setDate(x.getDate() - (6 - i)); return iso(x); }); 
+  const mx = Math.max(g.step, ...days.map(k => db.logs[k]?.step || 0)); 
+  $('chart7').innerHTML = days.map(k => { 
+    const v = db.logs[k]?.step || 0; 
+    return `<div><div class="col ${v < g.step ? 'low' : ''}" style="height:${mx ? (v / mx * 100) : 0}%" title="${v.toLocaleString()} ก้าว"></div><small>${thDate(k)}</small></div>`; 
+  }).join(''); 
+ 
+  const tips = [ 
+    'เดินหลังอาหารเย็น 15 นาที ช่วยลดน้ำตาลหลังมื้ออาหารได้ชัดเจน', 
+    'เปลี่ยนข้าวขาวเป็นข้าวกล้อง ช่วยเพิ่มใยอาหารและลด LDL', 
+    'กินผักก่อนข้าวทุกมื้อ ช่วยชะลอการดูดซึมน้ำตาล' 
+  ]; 
+  $('tip').textContent = '💡 ' + tips[new Date().getDate() % tips.length]; 
+} 
+ 
+/* ---------- หน้าต่างสรุปรายสัปดาห์ (Week) ---------- */ 
+$('w_date').value = today; 
+function renderWeek() { 
+  const selectedDate = new Date($('w_date').value || today); 
+  const startOfWeek = new Date(selectedDate); 
+  startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay()); 
+   
+  $('wRange').textContent = `สัปดาห์วันที่ ${thDate(startOfWeek)} - ${thDate(new Date(startOfWeek.getTime() + 6*24*60*60*1000))}`; 
+   
+  let totalSteps = 0; 
+  for(let i=0; i<7; i++){ 
+    let d = new Date(startOfWeek); 
+    d.setDate(d.getDate() + i); 
+    let log = db.logs[iso(d)]; 
+    if(log) totalSteps += (log.step || 0); 
+  } 
+   
+  const score = Math.min(100, Math.round((totalSteps / (db.goals.step * 7)) * 100)); 
+  $('wScore').textContent = score + '\%';$('wBar').style.width = score + '%'; 
+} 
+ 
+/* ---------- หน้าต่างผลเลือด (Lab) ---------- */ 
+function saveLab() { 
+  const d = $('l_date').value; 
+  if(!d) { toast('กรุณาระบุวันที่ตรวจ'); return; } 
+  db.labs.push({ 
+    date: d, ldl: $('l_ldl').value, hdl:$('l_hdl').value, 
+    tg: $('l_tg').value, tc:$('l_tc').value, a1c: $('l_a1c').value, fbs:$('l_fbs').value 
+  }); 
+  save(); 
+  toast('✅ บันทึกผลเลือดเรียบร้อย'); 
+  renderLab(); 
+} 
+ 
+function renderLab() { 
+  let html = '<tr><th>วันที่</th><th>LDL</th><th>HDL</th><th>TG</th><th>HbA1c</th></tr>'; 
+  db.labs.forEach(l => { 
+    html += `<tr><td>${thDate(l.date)}</td><td>${l.ldl||'-'}</td><td>${l.hdl||'-'}</td><td>${l.tg||'-'}</td><td>${l.a1c||'-'}%</td></tr>`; 
+  }); 
+  $('labTable').innerHTML = html; 
+} 
+ 
+/* ---------- หน้าต่างตั้งค่า (Settings) ---------- */ 
+function loadSet() { 
+  $('p_name').value = db.profile.name || ''; 
+  $('p_age').value = db.profile.age \vert{}\vert{} '';$('p_sex').value = db.profile.sex || 'ชาย'; 
+  $('p_ht').value = db.profile.ht \vert{}\vert{} '';$('g_step').value = db.goals.step || 8000; 
+  $('g_veg').value = db.goals.veg || 5; 
+  $('g_ex').value = db.goals.ex || 150; 
+  $('g_grain').value = db.goals.grain || 7; 
+  $('g_fish').value = db.goals.fish || 3; 
+  $('g_fried').value = db.goals.fried || 2; 
+  $('g_sweet').value = db.goals.sweet || 2; 
+  $('g_stress').value = db.goals.stress || 5; 
+} 
+ 
+function saveSet() { 
+  db.profile = { name: $('p_name').value, age:$('p_age').value, sex: $('p_sex').value, ht:$('p_ht').value }; 
+  db.goals = { 
+    step: +$('g_step').value || 8000, veg: +$('g_veg').value \vert{}\vert{} 5, ex: +$('g_ex').value || 150, 
+    grain: +$('g_grain').value || 7, fish: +$('g_fish').value \vert{}\vert{} 3, fried: +$('g_fried').value || 2, 
+    sweet: +$('g_sweet').value \vert{}\vert{} 2, stress: +$('g_stress').value || 5 
+  }; 
+  save(); 
+  toast('✅ บันทึกการตั้งค่าแล้ว'); 
+  renderHome(); 
+} 
+ 
+function exportJSON() { 
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' }); 
+  const a = document.createElement('a'); 
+  a.href = URL.createObjectURL(blob); 
+  a.download = `dmldl_data_${today}.json`; 
+  a.click(); 
+} 
+ 
+function exportCSV() { 
+  let csv = 'Date,Step,Veg,Ex,Med,Stress\n'; 
+  Object.keys(db.logs).forEach(k => { 
+    const l = db.logs[k]; 
+    csv += `${k},${l.step||0},${l.veg||0},${l.ex||0},${l.med||0},${l.stress||0}\n`; 
+  }); 
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); 
+  const a = document.createElement('a'); 
+  a.href = URL.createObjectURL(blob); 
+  a.download = `dmldl_logs_${today}.csv`; 
+  a.click(); 
+} 
+ 
+function clearAll() { 
+  if (confirm('คุณต้องการลบข้อมูลทั้งหมดหรือไม่? การกระทำนี้ไม่สามารถยกเลิกได้')) { 
+    localStorage.removeItem(KEY); 
+    location.reload(); 
+  } 
+} 
+ 
+/* ---------- เริ่มต้นการทำงาน ---------- */ 
+loadSet();  
+loadDay();  
+renderHome();  
+renderWeek();  
+renderLab(); 
+ 
+if (PID) {  
+  $('pidInput').value = PID;  
+  $('syncState').textContent = '✅ เชื่อมต่อแล้ว: ' + PID;  
+} 
+</script> 
+</body> 
+</html>ลิงค์google sheet
