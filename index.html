@@ -337,233 +337,233 @@ function tog(b) {
 }
 
 /* ---------- Google Sheets Integration ---------- */
-const API_URL = 'https://script.google.com/macros/s/AKfycbxRXOV6d5AdCyOjV-m79gc1b0IMsLxpLF89k0sbyK1AYUnGa99BtdLhJKM5HsIdrBIO/exec'; 
-let PID = localStorage.getItem('dmldl_pid') || ''; 
- 
-function setPid() { 
-  const v = $('pidInput').value.trim(); 
-  if (!v) { toast('กรุณากรอกรหัสผู้ป่วย'); return; } 
-  PID = v; 
-  localStorage.setItem('dmldl_pid', v); 
-  $('syncState').textContent = '✅ เชื่อมต่อแล้ว: ' + v; 
-  pullFromCloud(); 
-} 
- 
-function send(payload) { 
-  if (!PID) { $('syncState').textContent = '⚠️ ยังไม่ได้กรอกรหัสผู้ป่วย'; return; } 
-  payload.pid = PID; 
-  $('syncState').textContent = '⏳ กำลังส่งข้อมูล...'; 
-  fetch(API_URL, { 
-    method: 'POST', 
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-    body: JSON.stringify(payload) 
-  }) 
-  .then(r => r.json()) 
-  .then(r => $('syncState').textContent = r.ok ? '✅ ส่งข้อมูลสำเร็จ' : '❌ ส่งไม่สำเร็จ') 
-  .catch(() => $('syncState').textContent = '📴 ออฟไลน์ — บันทึกในเครื่องไว้แล้ว'); 
-} 
- 
-function pullFromCloud() { 
-  // ดึงข้อมูลกรณีรองรับการใช้แบบ Multi-device 
-} 
- 
-/* ---------- การนำทางหน้าต่าง ---------- */ 
-function go(v) { 
-  document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === v)); 
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v)); 
-  window.scrollTo({ top: 0, behavior: 'smooth' }); 
-  if (v === 'home') renderHome(); 
-  if (v === 'week') renderWeek(); 
-  if (v === 'lab') renderLab(); 
-  if (v === 'daily') loadDay(); 
-  if (v === 'set') loadSet(); 
-} 
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.v)); 
- 
-/* ---------- บันทึกรายวัน ---------- */ 
-$('d_date').value = today; 
-$('d_date').onchange = loadDay; 
- 
-function loadDay() { 
-  const d = db.logs[$('d_date').value] \vert{}\vert{} {};$('d_veg').value = d.veg ?? 0;  
-  $('d_grain').value = d.grain ?? 0;  
-  $('d_fish').value = d.fish ?? 0; 
-  $('d_fried').value = d.fried ?? 0;  
-  $('d_sweet').value = d.sweet ?? 0;  
-  $('d_chol').value = d.chol ?? 0; 
-  $('d_step').value = d.step ?? 0;  
-  $('d_ex').value = d.ex ?? 0;  
-  $('d_med').value = d.med ?? '1'; 
-  $('d_stress').value = d.stress ?? 3;  
-  $('stressVal').textContent = d.stress ?? 3; 
-  $('d_wt').value = d.wt ?? '';  
-  $('d_bs').value = d.bs ?? '';  
-  $('d_wc').value = d.wc ?? '';  
-  $('d_note').value = d.note ?? ''; 
-  $('dayFeedback').innerHTML = ''; 
-} 
- 
-function saveDay() { 
-  const k = $('d_date').value; 
-  if (!k) { toast('กรุณาเลือกวันที่'); return; } 
-  const n = id => +$(id).value || 0; 
-  db.logs[k] = { 
-    veg: n('d_veg'), grain: n('d_grain'), fish: n('d_fish'), fried: n('d_fried'), sweet: n('d_sweet'), 
-    chol: n('d_chol'), step: n('d_step'), ex: n('d_ex'), med: +$('d_med').value, stress: n('d_stress'), 
-    wt: $('d_wt').value, bs:$('d_bs').value, wc: $('d_wc').value, note:$('d_note').value 
-  }; 
-  save();  
-  toast('✅ บันทึกเรียบร้อยแล้ว'); 
-  send(Object.assign({ type: 'daily', date: k }, db.logs[k])); 
-  renderHome(); 
-} 
- 
-/* ---------- หน้าต่างภาพรวม (Home) ---------- */ 
-function renderHome() { 
-  const g = db.goals, t = db.logs[today] || {}; 
-  $('greet').textContent = 'สวัสดี ' + (db.profile.name || 'คุณผู้ใช้') + ' 🌤️'; 
-  $('s1').textContent = (t.step \vert{}\vert{} 0).toLocaleString();$('s2').textContent = t.veg || 0; 
-  $('s3').textContent = t.ex || 0; 
-   
-  let streak = 0, d = new Date(); 
-  while (db.logs[iso(d)]) { streak++; d.setDate(d.getDate() - 1); } 
-  $('s4').textContent = streak; 
- 
-  const items = [ 
-    ['👟 ก้าวเดิน', t.step || 0, g.step, 'ก้าว'], 
-    ['🥗 ผัก-ผลไม้', t.veg || 0, g.veg, 'ส่วน'], 
-    ['🏃 ออกกำลังกาย', t.ex || 0, Math.round(g.ex / 7), 'นาที'], 
-    ['💊 การกินยา', (t.med ?? 0) * 100, 100, '%'] 
-  ]; 
-  $('todayProg').innerHTML = items.map(([n, v, go_, u]) => { 
-    const p = Math.min(100, Math.round(v / (go_ || 1) * 100)); 
-    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:.88rem"> 
-      <span>${n}</span><b>${Math.round(v).toLocaleString()} / ${go_.toLocaleString()} ${u}</b></div> 
-      <div class="bar"><i style="width:${p}%;background:${p >= 100 ? 'var(--ok)' : 'var(--pri)'}"></i></div></div>`; 
-  }).join(''); 
- 
-  const days = [...Array(7)].map((_, i) => { const x = new Date(); x.setDate(x.getDate() - (6 - i)); return iso(x); }); 
-  const mx = Math.max(g.step, ...days.map(k => db.logs[k]?.step || 0)); 
-  $('chart7').innerHTML = days.map(k => { 
-    const v = db.logs[k]?.step || 0; 
-    return `<div><div class="col ${v < g.step ? 'low' : ''}" style="height:${mx ? (v / mx * 100) : 0}%" title="${v.toLocaleString()} ก้าว"></div><small>${thDate(k)}</small></div>`; 
-  }).join(''); 
- 
-  const tips = [ 
-    'เดินหลังอาหารเย็น 15 นาที ช่วยลดน้ำตาลหลังมื้ออาหารได้ชัดเจน', 
-    'เปลี่ยนข้าวขาวเป็นข้าวกล้อง ช่วยเพิ่มใยอาหารและลด LDL', 
-    'กินผักก่อนข้าวทุกมื้อ ช่วยชะลอการดูดซึมน้ำตาล' 
-  ]; 
-  $('tip').textContent = '💡 ' + tips[new Date().getDate() % tips.length]; 
-} 
- 
-/* ---------- หน้าต่างสรุปรายสัปดาห์ (Week) ---------- */ 
-$('w_date').value = today; 
-function renderWeek() { 
-  const selectedDate = new Date($('w_date').value || today); 
-  const startOfWeek = new Date(selectedDate); 
-  startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay()); 
-   
-  $('wRange').textContent = `สัปดาห์วันที่ ${thDate(startOfWeek)} - ${thDate(new Date(startOfWeek.getTime() + 6*24*60*60*1000))}`; 
-   
-  let totalSteps = 0; 
-  for(let i=0; i<7; i++){ 
-    let d = new Date(startOfWeek); 
-    d.setDate(d.getDate() + i); 
-    let log = db.logs[iso(d)]; 
-    if(log) totalSteps += (log.step || 0); 
-  } 
-   
-  const score = Math.min(100, Math.round((totalSteps / (db.goals.step * 7)) * 100)); 
-  $('wScore').textContent = score + '\%';$('wBar').style.width = score + '%'; 
-} 
- 
-/* ---------- หน้าต่างผลเลือด (Lab) ---------- */ 
-function saveLab() { 
-  const d = $('l_date').value; 
-  if(!d) { toast('กรุณาระบุวันที่ตรวจ'); return; } 
-  db.labs.push({ 
-    date: d, ldl: $('l_ldl').value, hdl:$('l_hdl').value, 
-    tg: $('l_tg').value, tc:$('l_tc').value, a1c: $('l_a1c').value, fbs:$('l_fbs').value 
-  }); 
+const API_URL = 'https://script.google.com/macros/s/AKfycbwF-Gllj1oZ8e9ivIKVpwC9lH0C2OuT_JhjpDXM5zUtxIdIoerlm32Edv1NzweiJubnsw/exec';
+let PID = localStorage.getItem('dmldl_pid') || '';
+
+function setPid() {
+  const v = $('pidInput').value.trim();
+  if (!v) { toast('กรุณากรอกรหัสผู้ป่วย'); return; }
+  PID = v;
+  localStorage.setItem('dmldl_pid', v);
+  $('syncState').textContent = '✅ เชื่อมต่อแล้ว: ' + v;
+  pullFromCloud();
+}
+
+function send(payload) {
+  if (!PID) { $('syncState').textContent = '⚠️ ยังไม่ได้กรอกรหัสผู้ป่วย'; return; }
+  payload.pid = PID;
+  $('syncState').textContent = '⏳ กำลังส่งข้อมูล...';
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(r => $('syncState').textContent = r.ok ? '✅ ส่งข้อมูลสำเร็จ' : '❌ ส่งไม่สำเร็จ')
+  .catch(() => $('syncState').textContent = '📴 ออฟไลน์ — บันทึกในเครื่องไว้แล้ว');
+}
+
+function pullFromCloud() {
+  // ดึงข้อมูลกรณีรองรับการใช้แบบ Multi-device
+}
+
+/* ---------- การนำทางหน้าต่าง ---------- */
+function go(v) {
+  document.querySelectorAll('.view').forEach(s => s.classList.toggle('on', s.id === v));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (v === 'home') renderHome();
+  if (v === 'week') renderWeek();
+  if (v === 'lab') renderLab();
+  if (v === 'daily') loadDay();
+  if (v === 'set') loadSet();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.v));
+
+/* ---------- บันทึกรายวัน ---------- */
+$('d_date').value = today;
+$('d_date').onchange = loadDay;
+
+function loadDay() {
+  const d = db.logs[$('d_date').value] \vert{}\vert{} {};$('d_veg').value = d.veg ?? 0; 
+  $('d_grain').value = d.grain ?? 0; 
+  $('d_fish').value = d.fish ?? 0;
+  $('d_fried').value = d.fried ?? 0; 
+  $('d_sweet').value = d.sweet ?? 0; 
+  $('d_chol').value = d.chol ?? 0;
+  $('d_step').value = d.step ?? 0; 
+  $('d_ex').value = d.ex ?? 0; 
+  $('d_med').value = d.med ?? '1';
+  $('d_stress').value = d.stress ?? 3; 
+  $('stressVal').textContent = d.stress ?? 3;
+  $('d_wt').value = d.wt ?? ''; 
+  $('d_bs').value = d.bs ?? ''; 
+  $('d_wc').value = d.wc ?? ''; 
+  $('d_note').value = d.note ?? '';
+  $('dayFeedback').innerHTML = '';
+}
+
+function saveDay() {
+  const k = $('d_date').value;
+  if (!k) { toast('กรุณาเลือกวันที่'); return; }
+  const n = id => +$(id).value || 0;
+  db.logs[k] = {
+    veg: n('d_veg'), grain: n('d_grain'), fish: n('d_fish'), fried: n('d_fried'), sweet: n('d_sweet'),
+    chol: n('d_chol'), step: n('d_step'), ex: n('d_ex'), med: +$('d_med').value, stress: n('d_stress'),
+    wt: $('d_wt').value, bs:$('d_bs').value, wc: $('d_wc').value, note:$('d_note').value
+  };
   save(); 
-  toast('✅ บันทึกผลเลือดเรียบร้อย'); 
-  renderLab(); 
-} 
- 
-function renderLab() { 
-  let html = '<tr><th>วันที่</th><th>LDL</th><th>HDL</th><th>TG</th><th>HbA1c</th></tr>'; 
-  db.labs.forEach(l => { 
-    html += `<tr><td>${thDate(l.date)}</td><td>${l.ldl||'-'}</td><td>${l.hdl||'-'}</td><td>${l.tg||'-'}</td><td>${l.a1c||'-'}%</td></tr>`; 
-  }); 
-  $('labTable').innerHTML = html; 
-} 
- 
-/* ---------- หน้าต่างตั้งค่า (Settings) ---------- */ 
-function loadSet() { 
-  $('p_name').value = db.profile.name || ''; 
-  $('p_age').value = db.profile.age \vert{}\vert{} '';$('p_sex').value = db.profile.sex || 'ชาย'; 
-  $('p_ht').value = db.profile.ht \vert{}\vert{} '';$('g_step').value = db.goals.step || 8000; 
-  $('g_veg').value = db.goals.veg || 5; 
-  $('g_ex').value = db.goals.ex || 150; 
-  $('g_grain').value = db.goals.grain || 7; 
-  $('g_fish').value = db.goals.fish || 3; 
-  $('g_fried').value = db.goals.fried || 2; 
-  $('g_sweet').value = db.goals.sweet || 2; 
-  $('g_stress').value = db.goals.stress || 5; 
-} 
- 
-function saveSet() { 
-  db.profile = { name: $('p_name').value, age:$('p_age').value, sex: $('p_sex').value, ht:$('p_ht').value }; 
-  db.goals = { 
-    step: +$('g_step').value || 8000, veg: +$('g_veg').value \vert{}\vert{} 5, ex: +$('g_ex').value || 150, 
-    grain: +$('g_grain').value || 7, fish: +$('g_fish').value \vert{}\vert{} 3, fried: +$('g_fried').value || 2, 
-    sweet: +$('g_sweet').value \vert{}\vert{} 2, stress: +$('g_stress').value || 5 
-  }; 
-  save(); 
-  toast('✅ บันทึกการตั้งค่าแล้ว'); 
-  renderHome(); 
-} 
- 
-function exportJSON() { 
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' }); 
-  const a = document.createElement('a'); 
-  a.href = URL.createObjectURL(blob); 
-  a.download = `dmldl_data_${today}.json`; 
-  a.click(); 
-} 
- 
-function exportCSV() { 
-  let csv = 'Date,Step,Veg,Ex,Med,Stress\n'; 
-  Object.keys(db.logs).forEach(k => { 
-    const l = db.logs[k]; 
-    csv += `${k},${l.step||0},${l.veg||0},${l.ex||0},${l.med||0},${l.stress||0}\n`; 
-  }); 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); 
-  const a = document.createElement('a'); 
-  a.href = URL.createObjectURL(blob); 
-  a.download = `dmldl_logs_${today}.csv`; 
-  a.click(); 
-} 
- 
-function clearAll() { 
-  if (confirm('คุณต้องการลบข้อมูลทั้งหมดหรือไม่? การกระทำนี้ไม่สามารถยกเลิกได้')) { 
-    localStorage.removeItem(KEY); 
-    location.reload(); 
-  } 
-} 
- 
-/* ---------- เริ่มต้นการทำงาน ---------- */ 
-loadSet();  
-loadDay();  
-renderHome();  
-renderWeek();  
-renderLab(); 
- 
-if (PID) {  
-  $('pidInput').value = PID;  
-  $('syncState').textContent = '✅ เชื่อมต่อแล้ว: ' + PID;  
-} 
-</script> 
-</body> 
-</html>ลิงค์google sheet
+  toast('✅ บันทึกเรียบร้อยแล้ว');
+  send(Object.assign({ type: 'daily', date: k }, db.logs[k]));
+  renderHome();
+}
+
+/* ---------- หน้าต่างภาพรวม (Home) ---------- */
+function renderHome() {
+  const g = db.goals, t = db.logs[today] || {};
+  $('greet').textContent = 'สวัสดี ' + (db.profile.name || 'คุณผู้ใช้') + ' 🌤️';
+  $('s1').textContent = (t.step \vert{}\vert{} 0).toLocaleString();$('s2').textContent = t.veg || 0;
+  $('s3').textContent = t.ex || 0;
+  
+  let streak = 0, d = new Date();
+  while (db.logs[iso(d)]) { streak++; d.setDate(d.getDate() - 1); }
+  $('s4').textContent = streak;
+
+  const items = [
+    ['👟 ก้าวเดิน', t.step || 0, g.step, 'ก้าว'],
+    ['🥗 ผัก-ผลไม้', t.veg || 0, g.veg, 'ส่วน'],
+    ['🏃 ออกกำลังกาย', t.ex || 0, Math.round(g.ex / 7), 'นาที'],
+    ['💊 การกินยา', (t.med ?? 0) * 100, 100, '%']
+  ];
+  $('todayProg').innerHTML = items.map(([n, v, go_, u]) => {
+    const p = Math.min(100, Math.round(v / (go_ || 1) * 100));
+    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:.88rem">
+      <span>${n}</span><b>${Math.round(v).toLocaleString()} / ${go_.toLocaleString()} ${u}</b></div>
+      <div class="bar"><i style="width:${p}%;background:${p >= 100 ? 'var(--ok)' : 'var(--pri)'}"></i></div></div>`;
+  }).join('');
+
+  const days = [...Array(7)].map((_, i) => { const x = new Date(); x.setDate(x.getDate() - (6 - i)); return iso(x); });
+  const mx = Math.max(g.step, ...days.map(k => db.logs[k]?.step || 0));
+  $('chart7').innerHTML = days.map(k => {
+    const v = db.logs[k]?.step || 0;
+    return `<div><div class="col ${v < g.step ? 'low' : ''}" style="height:${mx ? (v / mx * 100) : 0}%" title="${v.toLocaleString()} ก้าว"></div><small>${thDate(k)}</small></div>`;
+  }).join('');
+
+  const tips = [
+    'เดินหลังอาหารเย็น 15 นาที ช่วยลดน้ำตาลหลังมื้ออาหารได้ชัดเจน',
+    'เปลี่ยนข้าวขาวเป็นข้าวกล้อง ช่วยเพิ่มใยอาหารและลด LDL',
+    'กินผักก่อนข้าวทุกมื้อ ช่วยชะลอการดูดซึมน้ำตาล'
+  ];
+  $('tip').textContent = '💡 ' + tips[new Date().getDate() % tips.length];
+}
+
+/* ---------- หน้าต่างสรุปรายสัปดาห์ (Week) ---------- */
+$('w_date').value = today;
+function renderWeek() {
+  const selectedDate = new Date($('w_date').value || today);
+  const startOfWeek = new Date(selectedDate);
+  startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+  
+  $('wRange').textContent = `สัปดาห์วันที่ ${thDate(startOfWeek)} - ${thDate(new Date(startOfWeek.getTime() + 6*24*60*60*1000))}`;
+  
+  let totalSteps = 0;
+  for(let i=0; i<7; i++){
+    let d = new Date(startOfWeek);
+    d.setDate(d.getDate() + i);
+    let log = db.logs[iso(d)];
+    if(log) totalSteps += (log.step || 0);
+  }
+  
+  const score = Math.min(100, Math.round((totalSteps / (db.goals.step * 7)) * 100));
+  $('wScore').textContent = score + '\%';$('wBar').style.width = score + '%';
+}
+
+/* ---------- หน้าต่างผลเลือด (Lab) ---------- */
+function saveLab() {
+  const d = $('l_date').value;
+  if(!d) { toast('กรุณาระบุวันที่ตรวจ'); return; }
+  db.labs.push({
+    date: d, ldl: $('l_ldl').value, hdl:$('l_hdl').value,
+    tg: $('l_tg').value, tc:$('l_tc').value, a1c: $('l_a1c').value, fbs:$('l_fbs').value
+  });
+  save();
+  toast('✅ บันทึกผลเลือดเรียบร้อย');
+  renderLab();
+}
+
+function renderLab() {
+  let html = '<tr><th>วันที่</th><th>LDL</th><th>HDL</th><th>TG</th><th>HbA1c</th></tr>';
+  db.labs.forEach(l => {
+    html += `<tr><td>${thDate(l.date)}</td><td>${l.ldl||'-'}</td><td>${l.hdl||'-'}</td><td>${l.tg||'-'}</td><td>${l.a1c||'-'}%</td></tr>`;
+  });
+  $('labTable').innerHTML = html;
+}
+
+/* ---------- หน้าต่างตั้งค่า (Settings) ---------- */
+function loadSet() {
+  $('p_name').value = db.profile.name || '';
+  $('p_age').value = db.profile.age \vert{}\vert{} '';$('p_sex').value = db.profile.sex || 'ชาย';
+  $('p_ht').value = db.profile.ht \vert{}\vert{} '';$('g_step').value = db.goals.step || 8000;
+  $('g_veg').value = db.goals.veg || 5;
+  $('g_ex').value = db.goals.ex || 150;
+  $('g_grain').value = db.goals.grain || 7;
+  $('g_fish').value = db.goals.fish || 3;
+  $('g_fried').value = db.goals.fried || 2;
+  $('g_sweet').value = db.goals.sweet || 2;
+  $('g_stress').value = db.goals.stress || 5;
+}
+
+function saveSet() {
+  db.profile = { name: $('p_name').value, age:$('p_age').value, sex: $('p_sex').value, ht:$('p_ht').value };
+  db.goals = {
+    step: +$('g_step').value || 8000, veg: +$('g_veg').value \vert{}\vert{} 5, ex: +$('g_ex').value || 150,
+    grain: +$('g_grain').value || 7, fish: +$('g_fish').value \vert{}\vert{} 3, fried: +$('g_fried').value || 2,
+    sweet: +$('g_sweet').value \vert{}\vert{} 2, stress: +$('g_stress').value || 5
+  };
+  save();
+  toast('✅ บันทึกการตั้งค่าแล้ว');
+  renderHome();
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `dmldl_data_${today}.json`;
+  a.click();
+}
+
+function exportCSV() {
+  let csv = 'Date,Step,Veg,Ex,Med,Stress\n';
+  Object.keys(db.logs).forEach(k => {
+    const l = db.logs[k];
+    csv += `${k},${l.step||0},${l.veg||0},${l.ex||0},${l.med||0},${l.stress||0}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `dmldl_logs_${today}.csv`;
+  a.click();
+}
+
+function clearAll() {
+  if (confirm('คุณต้องการลบข้อมูลทั้งหมดหรือไม่? การกระทำนี้ไม่สามารถยกเลิกได้')) {
+    localStorage.removeItem(KEY);
+    location.reload();
+  }
+}
+
+/* ---------- เริ่มต้นการทำงาน ---------- */
+loadSet(); 
+loadDay(); 
+renderHome(); 
+renderWeek(); 
+renderLab();
+
+if (PID) { 
+  $('pidInput').value = PID; 
+  $('syncState').textContent = '✅ เชื่อมต่อแล้ว: ' + PID; 
+}
+</script>
+</body>
+</html>
